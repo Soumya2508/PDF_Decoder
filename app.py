@@ -84,5 +84,17 @@ if ask_clicked:
                 st.markdown("### Answer")
                 st.markdown(result.answer.text)
                 st.caption(f"Model: {result.answer.model}")
+
+                with st.expander(f"Sources ({len(result.hits)} chunks retrieved)"):
+                    for h in result.hits:
+                        st.markdown(
+                            f"**Page {h.chunk.page_number}** "
+                            f"&nbsp; _chunk {h.chunk.chunk_id}, distance {h.score:.3f}_"
+                        )
+                        snippet = h.chunk.text
+                        if len(snippet) > 600:
+                            snippet = snippet[:600] + "..."
+                        st.write(snippet)
+                        st.divider()
             except Exception as exc:
                 st.error(f"Query failed: {exc}")
