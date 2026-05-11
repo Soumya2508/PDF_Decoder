@@ -10,8 +10,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import BinaryIO
 
-import fitz  # PyMuPDF
-
 
 @dataclass
 class PageText:
@@ -25,6 +23,10 @@ def extract_pages(file: BinaryIO | bytes | str) -> list[PageText]:
     Accepts a filesystem path, raw bytes, or a file-like object (e.g. the
     Streamlit UploadedFile). Empty pages are skipped.
     """
+    # Lazy import: keeps the PageText dataclass importable in environments
+    # (e.g. unit tests) where PyMuPDF isn't installed.
+    import fitz  # PyMuPDF
+
     if isinstance(file, (bytes, bytearray)):
         doc = fitz.open(stream=bytes(file), filetype="pdf")
     elif isinstance(file, str):
