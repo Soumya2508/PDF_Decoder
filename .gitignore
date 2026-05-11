@@ -18,6 +18,7 @@ env/
 *.pkl
 uploads/
 data/
+test_data/
 
 # OS / IDE
 .DS_Store
