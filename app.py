@@ -27,13 +27,20 @@ def get_pipeline(api_key: str) -> RAGPipeline:
 with st.sidebar:
     st.header("Setup")
 
-    env_key = os.environ.get("GROQ_API_KEY", "")
-    api_key = st.text_input(
-        "Groq API key",
-        value=env_key,
-        type="password",
-        help="Get a free key at console.groq.com. Or set GROQ_API_KEY in .env.",
-    )
+    env_key = os.environ.get("GROQ_API_KEY", "").strip()
+    if env_key:
+        # Key already configured server-side (e.g. via .env or Render env var).
+        # Do NOT echo it to the UI — anyone visiting the deployed URL could
+        # otherwise reveal it by clicking the password-field eye icon.
+        api_key = env_key
+        st.success("Groq API key loaded from environment.")
+    else:
+        api_key = st.text_input(
+            "Groq API key",
+            value="",
+            type="password",
+            help="Paste your key for this session only. Get one free at console.groq.com.",
+        )
 
     uploaded = st.file_uploader("Upload a PDF", type=["pdf"])
     build_clicked = st.button("Build index", type="primary", use_container_width=True)
