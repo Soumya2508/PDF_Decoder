@@ -1,7 +1,12 @@
 [server]
 headless = true
 enableCORS = false
-enableXsrfProtection = true
+# XSRF must be off behind a reverse proxy (Render, HF Spaces, etc.) — the
+# proxy rewrites cookies and Streamlit's CSRF check rejects file uploads
+# with HTTP 400. Safe for a single-user demo where the only "action" is
+# uploading a PDF you chose yourself.
+enableXsrfProtection = false
+maxUploadSize = 50
 
 [browser]
 gatherUsageStats = false
