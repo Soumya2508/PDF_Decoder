@@ -1,6 +1,6 @@
 # PDF_Decoder
 
-A small, clean **RAG (Retrieval-Augmented Generation)** prototype that lets you
+A clean **RAG (Retrieval-Augmented Generation)** prototype that lets you
 upload a PDF — typically an annual report — and ask grounded questions about
 it. Built to be easy to read end-to-end so each layer of a modern RAG stack
 is visible and swappable.
@@ -9,19 +9,72 @@ is visible and swappable.
 PDF -> text -> chunks -> embeddings -> FAISS index -> retrieval -> LLM answer
 ```
 
+![Landing Page](screenshots/01_landing_page.png)
+
+---
+
 ## Features
 
-1. Upload any text-based PDF.
-2. Extract text page-by-page with **PyMuPDF**.
-3. Split into overlapping chunks (token-approx, page-aware).
-4. Generate embeddings with **sentence-transformers** (`all-MiniLM-L6-v2`).
-5. Index vectors in a local **FAISS** store.
-6. Retrieve the top-k most semantically similar chunks for a user query.
-7. Send those chunks to an **LLM** (Groq, Llama 3.3 70B) with a grounded
-   system prompt.
-8. Show the answer along with the source chunks and page numbers.
+| # | Feature | Technology |
+|---|---------|-----------|
+| 1 | Upload any text-based PDF | Streamlit file uploader |
+| 2 | Extract text page-by-page | **PyMuPDF** |
+| 3 | Split into overlapping chunks (token-approx, page-aware) | Custom chunker |
+| 4 | Generate embeddings | **sentence-transformers** (`all-MiniLM-L6-v2`, 384-dim) |
+| 5 | Index vectors in a local store | **FAISS** (`IndexFlatL2`) |
+| 6 | Retrieve top-k semantically similar chunks for a query | Cosine similarity via L2 on normalized vectors |
+| 7 | Generate grounded answers with page citations | **Groq** (Llama 3.3 70B) |
+| 8 | Show source chunks and page numbers | Expandable UI panel |
 
-## Project structure
+---
+
+## Demo
+
+### 1. Upload a PDF
+
+Upload any text-based PDF in the sidebar. The app supports files up to 50 MB.
+
+![PDF Uploaded](screenshots/02_pdf_uploaded.png)
+
+### 2. Build the Index
+
+Click **Build index** to run the full pipeline: text extraction → chunking → embedding → FAISS indexing. The success banner shows how many chunks and pages were processed.
+
+![Index Built](screenshots/03_index_built.png)
+
+### 3. Ask Questions
+
+Type a natural-language question and click **Ask**. The model retrieves the most relevant chunks and generates a grounded answer with page citations.
+
+![Q&A Answer](screenshots/04_qa_answer.png)
+
+### 4. Inspect Source Chunks
+
+Expand the **Sources** panel to see exactly which chunks were retrieved, their page numbers, and similarity scores — full transparency into how the answer was derived.
+
+![Source Chunks](screenshots/05_qa_sources.png)
+
+---
+
+## Architecture
+
+```mermaid
+graph LR
+    A[PDF Upload] --> B[PyMuPDF<br/>Text Extraction]
+    B --> C[Chunker<br/>Overlapping Windows]
+    C --> D[MiniLM Embedder<br/>384-dim vectors]
+    D --> E[FAISS Index<br/>L2 Nearest Neighbor]
+    F[User Question] --> G[Embed Question]
+    G --> E
+    E --> H[Top-k Chunks]
+    H --> I[Groq LLM<br/>Llama 3.3 70B]
+    F --> I
+    I --> J[Grounded Answer<br/>with Page Citations]
+```
+
+---
+
+## Project Structure
 
 ```
 PDF_Decoder/
@@ -40,7 +93,9 @@ PDF_Decoder/
 └── .env.example
 ```
 
-## Quick start (local)
+---
+
+## Quick Start (Local)
 
 ```bash
 # 1. clone and enter
@@ -71,12 +126,16 @@ index**, then ask a question.
 > First run will download the ~80 MB MiniLM embedding model. Later runs use
 > the local cache and start in a couple of seconds.
 
+---
+
 ## Docker
 
 ```bash
 docker build -t pdf-decoder .
 docker run -p 8501:8501 --env-file .env pdf-decoder
 ```
+
+---
 
 ## Deployment
 
@@ -97,15 +156,19 @@ needs a **long-lived Python server** (it maintains an in-memory FAISS index
 and a SentenceTransformer model in process), so it doesn't fit Vercel's
 runtime model. Use Render, Railway, Fly.io, or Hugging Face Spaces instead.
 
-## How it works (one-paragraph version)
+---
+
+## How It Works
 
 When you ask a question, we embed the question into the same 384-dimensional
 vector space as the chunks. FAISS finds the four chunks whose embeddings are
-closest (L2 distance, with normalized vectors -> equivalent to cosine
+closest (L2 distance, with normalized vectors → equivalent to cosine
 similarity). Those chunks plus your question are sent to the LLM with a
 system prompt that says: **only use what is in these chunks; otherwise say
 "I don't know"**. That last sentence is the "grounding" — the single biggest
 defense against hallucination in a RAG system.
+
+---
 
 ## Configuration
 
@@ -119,12 +182,16 @@ All knobs live in `.env`:
 
 Chunk size / overlap / top-k are arguments in code (`chunker.py`, `pipeline.py`).
 
+---
+
 ## Tests
 
 ```bash
 pip install pytest
 pytest tests/
 ```
+
+---
 
 ## License
 
